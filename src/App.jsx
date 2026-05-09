@@ -65,6 +65,21 @@ const fallbackTokens = [
   { symbol: "PYTH", name: "Pyth Network", price: 0, volume24h: 0, liquidity: 0, change24h: 0 }
 ];
 
+const featuredMarketSymbols = [
+  { symbol: "SOL", name: "Wrapped SOL" },
+  { symbol: "USDC", name: "USD Coin" },
+  { symbol: "USDT", name: "USDT" },
+  { symbol: "jlUSDC", name: "Jupiter Lend USDC" },
+  { symbol: "USD1", name: "World Liberty Financial USD" },
+  { symbol: "cbBTC", name: "Coinbase Wrapped BTC" },
+  { symbol: "ALIEN BOY", name: "ALIEN BOY" },
+  { symbol: "ROAF", name: "Russian Oil Asset Fund" },
+  { symbol: "ROLLING ON FLOOR", name: "ROFL" },
+  { symbol: "RS C0IN", name: "RIV" },
+  { symbol: "C0IN", name: "HANTA" },
+  { symbol: "C0IN", name: "UNOS" }
+];
+
 function formatCurrency(value, maximumFractionDigits = 2) {
   return `$${Number(value || 0).toLocaleString(undefined, {
     maximumFractionDigits
@@ -85,8 +100,43 @@ function formatPercent(value) {
   return `${number >= 0 ? "+" : ""}${number.toFixed(2)}%`;
 }
 
+function buildFeaturedMarketMovers(tokens) {
+  const usedKeys = new Set();
+  const findToken = (asset) =>
+    tokens.find((token) => {
+      const key = token.address || `${token.symbol}-${token.name}`;
+      const symbolMatches = token.symbol.toUpperCase() === asset.symbol.toUpperCase();
+      const nameMatches = token.name.toUpperCase().includes(asset.name.toUpperCase());
+
+      return symbolMatches && !usedKeys.has(key) && (asset.symbol !== "C0IN" || nameMatches);
+    });
+  const featured = featuredMarketSymbols.map((asset) => {
+    const liveToken = findToken(asset);
+
+    if (liveToken) {
+      usedKeys.add(liveToken.address || `${liveToken.symbol}-${liveToken.name}`);
+    }
+
+    return liveToken ?? {
+      ...asset,
+      price: 0,
+      volume24h: 0,
+      liquidity: 0,
+      change24h: 0,
+      watchOnly: true
+    };
+  });
+  const liveExtras = tokens.filter((token) => {
+    const key = token.address || `${token.symbol}-${token.name}`;
+
+    return !usedKeys.has(key);
+  });
+
+  return [...featured, ...liveExtras];
+}
+
 function App() {
-  const tokenOptions = useMemo(() => ({ chain: "solana", limit: 10 }), []);
+  const tokenOptions = useMemo(() => ({ chain: "solana", limit: 50 }), []);
   const {
     tokens: liveTokens,
     status,
@@ -94,7 +144,7 @@ function App() {
     meta,
     refresh
   } = useBirdeyeTokens(tokenOptions);
-  const displayTokens = liveTokens.length > 0 ? liveTokens : fallbackTokens;
+  const displayTokens = liveTokens.length > 0 ? buildFeaturedMarketMovers(liveTokens) : buildFeaturedMarketMovers(fallbackTokens);
   const isLoading = status === "loading";
   const totalVolume = displayTokens.reduce((sum, token) => sum + token.volume24h, 0);
   const totalLiquidity = displayTokens.reduce((sum, token) => sum + token.liquidity, 0);
@@ -270,11 +320,11 @@ function App() {
                 <b>--</b>
               </article>
             ) : (
-              displayTokens.slice(0, 6).map((token) => (
+              displayTokens.slice(0, 14).map((token) => (
                 <article className="token-card" key={token.address || token.symbol}>
                   <div>
                     <strong>{token.symbol}</strong>
-                    <span>{token.name}</span>
+                    <span>{token.watchOnly ? `${token.name} watchlist` : token.name}</span>
                   </div>
 
                   <div>

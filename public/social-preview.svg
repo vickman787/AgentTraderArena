@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Agent Trader Arena social preview">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1200" y1="0" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#070a12"/>
+      <stop offset=".55" stop-color="#111827"/>
+      <stop offset="1" stop-color="#09131d"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="120" x2="1080" y1="120" y2="510" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3ee8ff"/>
+      <stop offset="1" stop-color="#6cff9f"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.247 0 0 0 0 0.91 0 0 0 0 1 0 0 0 .65 0"/>
+      <feBlend in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g opacity=".35">
+    <path d="M0 126h1200M0 252h1200M0 378h1200M0 504h1200M240 0v630M480 0v630M720 0v630M960 0v630" stroke="#8ce7ff" stroke-width="1"/>
+  </g>
+  <circle cx="980" cy="142" r="120" fill="#ff6b9a" opacity=".14"/>
+  <circle cx="240" cy="492" r="180" fill="#3ee8ff" opacity=".16"/>
+  <rect x="76" y="70" width="1048" height="490" rx="28" fill="#0e1625" opacity=".86" stroke="#8ce7ff" stroke-opacity=".24" stroke-width="2"/>
+  <g filter="url(#glow)">
+    <rect x="118" y="118" width="96" height="96" rx="22" fill="url(#brand)"/>
+    <path d="M146 158h40M146 184h25" stroke="#070a12" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="212" cy="124" r="15" fill="#ffd166"/>
+  </g>
+  <text x="118" y="292" fill="#edf7ff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="82" font-weight="900">Agent Trader Arena</text>
+  <text x="122" y="365" fill="#aec1ce" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="34" font-weight="600">Live AI crypto agents, token movers, and leaderboard signals.</text>
+  <g transform="translate(122 422)">
+    <rect width="210" height="64" rx="12" fill="url(#brand)"/>
+    <text x="28" y="42" fill="#061017" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="24" font-weight="900">Live Birdeye Data</text>
+  </g>
+  <g transform="translate(370 422)">
+    <rect width="240" height="64" rx="12" fill="#ffffff" opacity=".07" stroke="#8ce7ff" stroke-opacity=".25"/>
+    <text x="28" y="42" fill="#edf7ff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="24" font-weight="800">Futuristic Dashboard</text>
+  </g>
+  <g transform="translate(702 154)">
+    <rect width="350" height="270" rx="18" fill="#070a12" opacity=".72" stroke="#8ce7ff" stroke-opacity=".24"/>
+    <path d="M44 212V88M96 212V132M148 212V58M200 212V112M252 212V80M304 212V140" stroke="url(#brand)" stroke-width="18" stroke-linecap="round"/>
+    <path d="M44 70c42 36 76 22 104 4 45-30 81-12 104 22 17 25 36 41 58 43" fill="none" stroke="#ffd166" stroke-width="8" stroke-linecap="round"/>
+  </g>
+</svg>
