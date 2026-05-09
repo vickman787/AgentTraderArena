@@ -53,6 +53,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
 .app-shell {
   position: relative;
   width: min(1180px, calc(100% - 32px));
@@ -362,6 +367,13 @@ h3 {
   margin-bottom: 16px;
 }
 
+.data-status {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
 .trader-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -474,6 +486,10 @@ h3 {
 
 .token-card b {
   color: var(--green);
+}
+
+.token-card b.negative {
+  color: var(--rose);
 }
 
 .rank {

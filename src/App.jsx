@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
 import {
   Activity,
@@ -17,6 +17,7 @@ import {
   WalletCards,
   Zap
 } from "lucide-react";
+import { useBirdeyeTokens } from "./hooks/useBirdeyeTokens";
 
 const traders = [
   {
@@ -58,54 +59,58 @@ const leaderboard = [
   { rank: 4, agent: "Cipher Ray", score: "79,330", arena: "Options", streak: "5W" }
 ];
 
-const marketStats = [
-  { label: "Arena TVL", value: "$128.7M", icon: WalletCards },
-  { label: "Active Agents", value: "2,481", icon: Bot },
-  { label: "Trades Today", value: "96,320", icon: Activity },
-  { label: "Signal Accuracy", value: "84.6%", icon: ShieldCheck }
+const fallbackTokens = [
+  { symbol: "SOL", name: "Solana", price: 0, volume24h: 0, liquidity: 0, change24h: 0 },
+  { symbol: "JUP", name: "Jupiter", price: 0, volume24h: 0, liquidity: 0, change24h: 0 },
+  { symbol: "PYTH", name: "Pyth Network", price: 0, volume24h: 0, liquidity: 0, change24h: 0 }
 ];
 
+function formatCurrency(value, maximumFractionDigits = 2) {
+  return `$${Number(value || 0).toLocaleString(undefined, {
+    maximumFractionDigits
+  })}`;
+}
+
+function formatCompactCurrency(value) {
+  return Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+    notation: "compact",
+    maximumFractionDigits: 1
+  }).format(Number(value || 0));
+}
+
+function formatPercent(value) {
+  const number = Number(value || 0);
+  return `${number >= 0 ? "+" : ""}${number.toFixed(2)}%`;
+}
+
 function App() {
-  const API_KEY = import.meta.env.VITE_BIRDEYE_API_KEY;
-
-  const [liveTokens, setLiveTokens] = useState([]);
-  const [loadingTokens, setLoadingTokens] = useState(false);
-  const [apiCalls, setApiCalls] = useState(0);
-
-  const fetchTokens = async () => {
-    try {
-      setLoadingTokens(true);
-
-      const response = await fetch(
-        "https://public-api.birdeye.so/defi/tokenlist?sort_by=v24hUSD&sort_type=desc&offset=0&limit=10",
-        {
-          headers: {
-            accept: "application/json",
-            "X-API-KEY": API_KEY,
-            "x-chain": "solana"
-          }
-        }
-      );
-
-      const data = await response.json();
-
-      console.log("Birdeye API Response:", data);
-
-      if (data?.data?.tokens) {
-        setLiveTokens(data.data.tokens);
-      }
-
-      setApiCalls((prev) => prev + 1);
-    } catch (error) {
-      console.error("Birdeye API Error:", error);
-    } finally {
-      setLoadingTokens(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTokens();
-  }, []);
+  const tokenOptions = useMemo(() => ({ chain: "solana", limit: 10 }), []);
+  const {
+    tokens: liveTokens,
+    status,
+    error,
+    meta,
+    refresh
+  } = useBirdeyeTokens(tokenOptions);
+  const displayTokens = liveTokens.length > 0 ? liveTokens : fallbackTokens;
+  const isLoading = status === "loading";
+  const totalVolume = displayTokens.reduce((sum, token) => sum + token.volume24h, 0);
+  const totalLiquidity = displayTokens.reduce((sum, token) => sum + token.liquidity, 0);
+  const positiveTokens = displayTokens.filter((token) => token.change24h >= 0).length;
+  const averageChange =
+    displayTokens.reduce((sum, token) => sum + token.change24h, 0) / displayTokens.length;
+  const marketStats = [
+    { label: "24h Volume", value: formatCompactCurrency(totalVolume), icon: WalletCards },
+    { label: "Tracked Tokens", value: String(displayTokens.length), icon: Bot },
+    { label: "Liquidity", value: formatCompactCurrency(totalLiquidity), icon: Activity },
+    { label: "Positive Movers", value: `${positiveTokens}/${displayTokens.length}`, icon: ShieldCheck }
+  ];
+  const signalBars = displayTokens.slice(0, 10).map((token, index) => ({
+    height: `${Math.min(96, Math.max(24, Math.abs(token.change24h) * 4 + 24))}%`,
+    delay: `${index * 0.08}s`
+  }));
 
   return (
     <main className="app-shell">
@@ -146,14 +151,19 @@ function App() {
           </p>
 
           <div className="hero-actions">
-            <button className="primary-action" type="button" onClick={fetchTokens}>
-              {loadingTokens ? "Loading Data..." : "Refresh Arena Data"}
+            <button
+              className="primary-action"
+              type="button"
+              onClick={() => refresh({ forceRefresh: true })}
+              disabled={isLoading}
+            >
+              {isLoading ? "Loading Data..." : "Refresh Arena Data"}
               <ArrowUpRight size={18} />
             </button>
 
             <button className="secondary-action" type="button">
               <CandlestickChart size={18} />
-              API Calls: {apiCalls}
+              API Calls: {meta.calls}
             </button>
           </div>
         </div>
@@ -169,9 +179,11 @@ function App() {
           </div>
 
           <div className="ticker-strip">
-            <span>BTC +3.4%</span>
-            <span>ETH +5.2%</span>
-            <span>SOL +8.1%</span>
+            {displayTokens.slice(0, 3).map((token) => (
+              <span key={token.symbol}>
+                {token.symbol} {formatPercent(token.change24h)}
+              </span>
+            ))}
           </div>
         </div>
       </section>
@@ -237,10 +249,15 @@ function App() {
           <div className="section-heading compact">
             <p>Live Birdeye token cards</p>
             <h2>Market movers</h2>
+            <span className="data-status">
+              {error
+                ? error
+                : `${meta.source || "connecting"}${meta.fetchedAt ? ` | ${new Date(meta.fetchedAt).toLocaleTimeString()}` : ""}`}
+            </span>
           </div>
 
           <div className="token-list">
-            {liveTokens.length === 0 ? (
+            {isLoading && liveTokens.length === 0 ? (
               <article className="token-card">
                 <div>
                   <strong>Loading</strong>
@@ -253,28 +270,20 @@ function App() {
                 <b>--</b>
               </article>
             ) : (
-              liveTokens.map((token) => (
+              displayTokens.slice(0, 6).map((token) => (
                 <article className="token-card" key={token.address || token.symbol}>
                   <div>
-                    <strong>{token.symbol || "N/A"}</strong>
-                    <span>{token.name || "Unknown Token"}</span>
+                    <strong>{token.symbol}</strong>
+                    <span>{token.name}</span>
                   </div>
 
                   <div>
-                    <strong>
-                      ${Number(token.price || 0).toLocaleString(undefined, {
-                        maximumFractionDigits: 6
-                      })}
-                    </strong>
-                    <span>
-                      ${Number(token.v24hUSD || 0).toLocaleString(undefined, {
-                        maximumFractionDigits: 0
-                      })} Vol
-                    </span>
+                    <strong>{formatCurrency(token.price, 6)}</strong>
+                    <span>{formatCompactCurrency(token.volume24h)} Vol</span>
                   </div>
 
-                  <b>
-                    {Number(token.v24hChangePercent || 0).toFixed(2)}%
+                  <b className={token.change24h < 0 ? "negative" : ""}>
+                    {formatPercent(token.change24h)}
                   </b>
                 </article>
               ))
@@ -307,6 +316,24 @@ function App() {
                 </div>
               </article>
             ))}
+            {displayTokens.slice(0, 3).map((token, index) => (
+              <article className="leader-card" key={`token-${token.address || token.symbol}`}>
+                <span className="rank">
+                  <Trophy size={16} />
+                  #{index + 5}
+                </span>
+
+                <div>
+                  <strong>{token.symbol} Scout</strong>
+                  <span>Live token arena</span>
+                </div>
+
+                <div>
+                  <strong>{formatCompactCurrency(token.volume24h)}</strong>
+                  <span>{formatPercent(token.change24h)} 24h</span>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       </section>
@@ -319,23 +346,23 @@ function App() {
 
         <div className="console-grid">
           <div className="signal-chart">
-            {Array.from({ length: 22 }).map((_, index) => (
+            {signalBars.map((bar, index) => (
               <span
                 className="chart-bar"
                 key={index}
                 style={{
-                  "--height": `${28 + ((index * 17) % 68)}%`,
-                  "--delay": `${index * 0.08}s`
+                  "--height": bar.height,
+                  "--delay": bar.delay
                 }}
               />
             ))}
           </div>
 
           <div className="console-feed">
-            <p><Gem size={16} /> Birdeye token list connected</p>
-            <p><CircleDollarSign size={16} /> Live Solana market data loaded</p>
-            <p><Bot size={16} /> Arena agents scanning top volume tokens</p>
-            <p><Activity size={16} /> API calls tracked for campaign progress</p>
+            <p><Gem size={16} /> {displayTokens[0]?.symbol} leads live volume scan</p>
+            <p><CircleDollarSign size={16} /> {formatCompactCurrency(totalVolume)} routed through watched markets</p>
+            <p><Bot size={16} /> Arena agents tracking {displayTokens.length} Solana tokens</p>
+            <p><Activity size={16} /> Average 24h move is {formatPercent(averageChange)}</p>
           </div>
         </div>
       </section>
